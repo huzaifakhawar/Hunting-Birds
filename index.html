@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="loading">CALIBRATING SIGHT…</div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">+</span>
+        <span>SKYLINE <em>PROTOCOL</em></span>
+      </div>
+      <div class="study-label">BEHAVIORAL TASK / 3D PILOT 02</div>
+      <div class="topbar-actions">
+        <button class="icon-button" id="resetButton">↻</button>
+        <button class="secondary-button desktop-vr-button" id="desktopVrButton">PLAY IMMERSIVE MODE</button>
+      </div>
+    </header>
+
+    <section class="intro-row">
+      <div>
+        <p class="eyebrow">IMPULSIVITY LAB · 3D FIELD STUDY</p>
+        <h1>Hold your nerve.<br /><span>Choose your moment.</span></h1>
+      </div>
+      <div class="intro-copy">
+        A response-inhibition field task. Watch the treeline. Read the birds.
+        Loose your bolt — or hold.
+      </div>
+    </section>
+
+    <section class="status-strip">
+      <div><span class="label">SESSION</span><strong id="sessionStatus">READY</strong></div>
+      <div><span class="label">LEVEL <span id="levelNumber">01</span></span><strong id="levelName">FAMILIARIZATION</strong></div>
+      <div><span class="label">TRIAL</span><strong><span id="trialNumber">01</span> / <span id="trialTotal">03</span></strong></div>
+      <div><span class="label">BIRDS IN FIELD</span><strong id="birdCount">0</strong></div>
+      <div><span class="label">REQUIRED TARGET</span><strong id="targetSpecies">--</strong></div>
+      <div><span class="label">BOLTS LEFT</span><strong id="shotsLeft">--</strong></div>
+      <div class="score-block"><span class="label">SCORE</span><strong id="score">000</strong></div>
+    </section>
+
+    <section class="game-grid">
+      <div class="game-column">
+        <div class="canvas-wrap">
+          <canvas id="gameCanvas"></canvas>
+
+          <div class="immersive-guide hidden" id="immersiveGuide">
+            <strong>IMMERSIVE FIELD</strong>
+            <span>Mouse aims · click or SPACE fires · WASD moves</span>
+          </div>
+
+          <div class="canvas-hud">
+            <span id="roundType">STANDARD ROUND</span>
+            <span id="roundTimer">00.0s</span>
+          </div>
+
+          <div class="crosshair" id="crosshair" aria-hidden="true"></div>
+
+          <div class="species-legend">
+            <div><i class="sw crow"></i> Crow · target</div>
+            <div><i class="sw owl"></i> Owl · no-go</div>
+            <div><i class="sw eagle"></i> Eagle · risk</div>
+          </div>
+
+          <div class="choice-panel" id="choicePanel">
+            <p class="panel-kicker" id="levelPrompt">LEVEL 01 · FAMILIARIZATION</p>
+            <h2 id="choiceHeading">Choose your reward timing</h2>
+            <p id="choiceDescription">Select once for this level.</p>
+            <div class="choice-actions">
+              <button class="choice-button" data-choice="immediate">
+                <b>Take now</b><small id="immediateReward">+10 baseline</small>
+              </button>
+              <button class="choice-button delayed" data-choice="delayed">
+                <b>Wait for more</b><small id="delayedReward">+25 after delay</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="complete-panel hidden" id="completePanel">
+            <p class="panel-kicker">TASK COMPLETE</p>
+            <h2>Pattern captured.</h2>
+            <p>Review the behavioral profile, then export the session.</p>
+            <button class="secondary-button" id="nextLevelButton">Continue to level 2</button>
+            <button class="primary-button" id="exportButton">Export session data ↓</button>
+          </div>
+
+          <div class="complete-panel hidden" id="restartPanel">
+            <p class="panel-kicker">TRIAL ENDED</p>
+            <h2>No successful hunt.</h2>
+            <p>Restart this assessment level to try the target again.</p>
+            <button class="primary-button" id="restartButton">Start again</button>
+          </div>
+
+          <div class="flash" id="flash"></div>
+        </div>
+
+        <div class="controls-row">
+          <div class="catapult-key">
+            <span class="key-icon">●</span>
+            <span><b>Click / SPACE</b><small>aim with mouse · move with WASD / arrows</small></span>
+          </div>
+          <div class="legend">
+            <span class="dot target"></span> target
+            <span class="dot nogo"></span> no-go
+            <span class="dot risk"></span> risk
+          </div>
+        </div>
+      </div>
+
+      <aside class="metrics-panel">
+        <div class="metrics-header">
+          <div><p class="eyebrow">LIVE READOUT</p><h2>Behavioral profile</h2></div>
+          <span class="recording"><i></i> REC</span>
+        </div>
+
+        <div class="metric-group">
+          <div class="group-title">RESPONSE INHIBITION <span>01</span></div>
+          <div class="metric"><span>Commission-error rate</span><b id="commissionRate">--</b></div>
+          <div class="metric"><span>Failed inhibition</span><b id="failedInhibition">--</b></div>
+          <div class="metric"><span>Successful inhibition</span><b id="successfulInhibition">--</b></div>
+        </div>
+
+        <div class="metric-group">
+          <div class="group-title">PREMATURE RESPONDING <span>02</span></div>
+          <div class="metric"><span>Premature-response rate</span><b id="prematureRate">--</b></div>
+          <div class="metric"><span>Mean premature frequency</span><b id="prematureFrequency">--</b></div>
+        </div>
+
+        <div class="metric-group">
+          <div class="group-title">RISK + DELAY <span>03</span></div>
+          <div class="metric"><span>Risky-choice rate</span><b id="riskyRate">--</b></div>
+          <div class="metric"><span>Average risk level</span><b id="riskLevel">--</b></div>
+          <div class="metric"><span>Immediate / delayed</span><b id="delayChoices">--</b></div>
+        </div>
+
+        <div class="metric-group">
+          <div class="group-title">RESPONSE BEHAVIOR <span>04</span></div>
+          <div class="metric"><span>Mean reaction time</span><b id="meanRt">--</b></div>
+          <div class="metric"><span>Median reaction time</span><b id="medianRt">--</b></div>
+          <div class="metric"><span>RT variability</span><b id="rtVariability">--</b></div>
+          <div class="metric"><span>Response consistency</span><b id="responseConsistency">--</b></div>
+          <div class="metric"><span>Speed–accuracy</span><b id="speedAccuracy">--</b></div>
+        </div>
+
+        <div class="metric-group">
+          <div class="group-title">3D FIELD STATS <span>05</span></div>
+          <div class="metric"><span>Crow accuracy</span><b id="crowAcc">--</b></div>
+          <div class="metric"><span>Eagle accuracy</span><b id="eagleAcc">--</b></div>
+          <div class="metric"><span>Arrows loosed</span><b id="arrowCount">0</b></div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="secondary-button" id="exportButtonBottom">Export JSON ↓</button>
+          <span>Data stays in this browser</span>
+        </div>
+
+        <details class="definitions-panel">
+          <summary>Behavior definitions</summary>
+          <dl>
+            <dt>Premature response</dt><dd>Firing before the configured response window.</dd>
+            <dt>Response inhibition</dt><dd>Withholding a response when the visible bird is not the required target.</dd>
+            <dt>Commission error</dt><dd>Hitting a non-required bird.</dd>
+            <dt>Omission error</dt><dd>Failing to hit the required bird before time expires.</dd>
+            <dt>Consistency</dt><dd>Similarity of response timing and target choices across trials.</dd>
+          </dl>
+        </details>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
